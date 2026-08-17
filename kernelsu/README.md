@@ -26,6 +26,8 @@ between KMIs.
 | `ksud-samsung-android14-6.1-kdp` | Same verified 6.1 targets | `android14-6.1` | Late-load binary embedding the 6.1 module |
 | `android12-5.10_kernelsu-samsung-kdp.ko` | `SM-A155N` `A155NKSS6BYH1` | `android12-5.10` | Standalone Samsung KDP/RKP/DEFEX module built against the exact A15 kernel |
 | `ksud-samsung-android12-5.10-kdp` | `SM-A155N` `A155NKSS6BYH1` | `android12-5.10` | Late-load binary embedding the 5.10 module |
+| `android14-6.1_kernelsu-q6q-F9560ZCU3DZDP-kdp.ko` | `SM-F9560`, `F9560ZCU3DZDP` | `android14-6.1` | Exact q6q no-patch-text module with target `vermagic`, audited for manual relocation; device-tested |
+| `ksud-q6q-F9560ZCU3DZDP-kdp` | Same exact q6q build | `android14-6.1` | Device-tested late-load binary embedding the exact q6q no-patch-text module |
 
 The standalone `.ko` files are retained for auditing. Root My Galaxy downloads
 the corresponding `ksud-*` file because `ksud late-load` loads its embedded
@@ -33,7 +35,13 @@ the corresponding `ksud-*` file because `ksud late-load` loads its embedded
 
 The generic 6.1 files and E3Q pair are build-verified but device-untested. The
 E3Q pair is tied to the full S928U DZF2 release string and must not be replaced
-with the generic 6.1 pair. The E2S pair is tied to the S926B DZDR release,
+with the generic 6.1 pair. The q6q pair is tied to the F9560ZCU3DZDP release,
+device-tested: the exact-vermagic no-patch-text module late-loads cleanly and
+KernelSU Manager reports `Working <LKM> [Jailbreak mode]` version `32525`.
+The first q6q module (without `CONFIG_KSU_SAMSUNG_NO_PATCH_TEXT`) hung the
+kernel in the syscall-table live patch and the TZ non-secure watchdog bit
+(warm reset, no Oops) — the same Samsung EL2 failure class as E1S/A56; the
+published pair disables that path. The E2S pair is tied to the S926B DZDR release,
 static-audited, and device-tested: late-load reports version code `32525`, and
 the loader runs in `u:r:ksu:s0`. The E1S pair is tied to the S921B DZE1 release,
 static-audited against the recovered DZE1 `vmlinux` (202 undefined symbols, zero
